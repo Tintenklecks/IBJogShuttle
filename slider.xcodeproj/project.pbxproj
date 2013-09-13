@@ -38,8 +38,8 @@
 		6D619184175A8AAB00066AE3 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		6D619185175A8AAB00066AE3 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		6D619188175A8AAB00066AE3 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/ViewController.xib; sourceTree = "<group>"; };
-		6D619192175B4B7500066AE3 /* IBJogShuttle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IBJogShuttle.h; sourceTree = "<group>"; };
-		6D619193175B4B7500066AE3 /* IBJogShuttle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IBJogShuttle.m; sourceTree = "<group>"; };
+		6D619192175B4B7500066AE3 /* IBJogShuttle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = IBJogShuttle.h; path = slider/IBJogShuttle.h; sourceTree = "<group>"; };
+		6D619193175B4B7500066AE3 /* IBJogShuttle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = IBJogShuttle.m; path = slider/IBJogShuttle.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,7 +59,8 @@
 		6D619160175A8AAB00066AE3 = {
 			isa = PBXGroup;
 			children = (
-				6D619172175A8AAB00066AE3 /* slider */,
+				6DF6DF0017E317730072F9E5 /* jogShuttle control */,
+				6D619172175A8AAB00066AE3 /* sliderdemo app */,
 				6D61916B175A8AAB00066AE3 /* Frameworks */,
 				6D61916A175A8AAB00066AE3 /* Products */,
 			);
@@ -83,7 +84,7 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		6D619172175A8AAB00066AE3 /* slider */ = {
+		6D619172175A8AAB00066AE3 /* sliderdemo app */ = {
 			isa = PBXGroup;
 			children = (
 				6D61917B175A8AAB00066AE3 /* AppDelegate.h */,
@@ -91,10 +92,9 @@
 				6D619184175A8AAB00066AE3 /* ViewController.h */,
 				6D619185175A8AAB00066AE3 /* ViewController.m */,
 				6D619187175A8AAB00066AE3 /* ViewController.xib */,
-				6D619192175B4B7500066AE3 /* IBJogShuttle.h */,
-				6D619193175B4B7500066AE3 /* IBJogShuttle.m */,
 				6D619173175A8AAB00066AE3 /* Supporting Files */,
 			);
+			name = "sliderdemo app";
 			path = slider;
 			sourceTree = "<group>";
 		};
@@ -110,6 +110,15 @@
 				6D619182175A8AAB00066AE3 /* Default-568h@2x.png */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		6DF6DF0017E317730072F9E5 /* jogShuttle control */ = {
+			isa = PBXGroup;
+			children = (
+				6D619192175B4B7500066AE3 /* IBJogShuttle.h */,
+				6D619193175B4B7500066AE3 /* IBJogShuttle.m */,
+			);
+			name = "jogShuttle control";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -269,9 +278,9 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "slider/slider-Prefix.pch";
 				INFOPLIST_FILE = "slider/slider-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -282,9 +291,9 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "slider/slider-Prefix.pch";
 				INFOPLIST_FILE = "slider/slider-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

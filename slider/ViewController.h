@@ -7,7 +7,10 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "IBJogShuttle.h"
 
-@interface ViewController : UIViewController
+
+@interface ViewController : UIViewController <IBJogShuttleDelegate>
+@property (strong, nonatomic) IBOutlet UILabel *percentageLable;
 
 @end

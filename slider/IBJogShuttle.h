@@ -15,27 +15,45 @@
 
 @optional
 
-- (void)didChangeJogShuttlePercentage:(IBJogShuttle *)jogShuttle;
-@end;
+- (void)IBJogShuttledidChangePercentage:(IBJogShuttle *)jogShuttle;
+@end
+
+
+enum IBJogShuttleButtonType {
+    IBJogButtonNone = 0,
+    IBJogButtonRoundButton = 1,
+    IBJogButtonRectButton = 2,
+    IBJogButtonArrows = 3
+    };
+
 
 @interface IBJogShuttle : UIScrollView <UIScrollViewDelegate>
+
+
+
+
+@property (nonatomic) enum IBJogShuttleButtonType jogShuttleButtonType;
+
 @property (nonatomic) NSInteger grooveCount;
+@property (nonatomic) float grooveAlpa;// to be done (13-09-13 12:58)
+@property (nonatomic) float grooveWidth; // to be done (13-09-13 12:58)
 
 @property (nonatomic) double minValue;
 @property (nonatomic) double maxValue;
 @property (nonatomic) double value;
+@property (nonatomic) double percent;
+
+@property (nonatomic) CGSize centerButtonSize;
+
+
+
 
 @property (nonatomic) BOOL borderBottom;
 @property (nonatomic) BOOL borderTop;
-@property (nonatomic, retain) IBJogShuttleSlider *slider;
-@property (nonatomic, weak) id <IBJogShuttleDelegate> jogShuttleDelegate;
-@end
 
-@interface IBJogShuttleSlider : UIView
-@property (nonatomic) NSInteger grooveCount;
+@property (nonatomic, strong) IBJogShuttleSlider *slider;
+
+@property (nonatomic, strong) id <IBJogShuttleDelegate> jogShuttleDelegate;
 
 @end
 
-@interface IBJogShuttleButton : UIView
-
-@end
