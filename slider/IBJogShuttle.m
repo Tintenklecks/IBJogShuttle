@@ -16,54 +16,42 @@
 
 @implementation IBJogShuttle
 
--(id) init {
-    self = [super init];
-    if (self) {
-    }
-    
-    return self;
-  
-}
-
--(id) initWithCoder:(NSCoder *)aDecoder {
-    self = [super initWithCoder:aDecoder];
-    if (self) {
-    }
-    NSLog(@".. %@", self);
-    return self;
-    
-}
-- (id)initWithFrame:(CGRect)frame
-{
+- (id)initWithFrame:(CGRect)frame { // IBJogShuttle
     self = [super initWithFrame:frame];
     if (self) {
         self.backgroundColor = [UIColor  clearColor];
-        self.backgroundColor = [UIColor  redColor];
-//        self.delegate = self;
         
         
-        self.jogShuttleButtonType = IBJogButtonArrows;
+        _jogShuttleButtonType = IBJogButtonRoundButton; // IBJogButtonArrows;
         
-        self.bounces = NO;
-        self.showsHorizontalScrollIndicator = NO;
-        self.showsVerticalScrollIndicator=NO;
-        self.grooveCount = 11;
-        self.borderBottom = YES;
-        self.borderTop = YES;
+        _grooveCount = 11;
+        _borderBottom = YES;
+        _borderTop = YES;
         
         _minValue = 0.0;
         _maxValue = 100.0;
         _value = 50.0;
         
-        self.jogShuttleDelegate=nil;
+        _jogShuttleDelegate=nil;
+        
         CGRect sliderFrame = self.bounds;
         sliderFrame.size.width *= 2;
         sliderFrame.size.height -= 6;
         sliderFrame.origin.y += 3;
         
         _slider = [[IBJogShuttleSlider alloc] initWithFrame:sliderFrame];
+        self.clipsToBounds = YES;
+      //  self.autoresizingMask = UIViewAutoresizingFlexibleHeight + UIViewAutoresizingFlexibleWidth;
+        _slider.center = self.center;
         _slider.jogShuttle = self;
-        self.contentSize = sliderFrame.size;
+        
+        UIPanGestureRecognizer* pgr = [[UIPanGestureRecognizer alloc]
+                                       initWithTarget:self
+                                       action:@selector(handlePan:)];
+        [_slider addGestureRecognizer:pgr];
+
+        
+        
         [self addSubview:_slider];
         [self centerSlider:NO];
         NSLog(@".. %@", self);
@@ -72,24 +60,104 @@
     return self;
 }
 
+-(void)handlePan:(UIPanGestureRecognizer*)pgr;
+{
+    static NSTimer* timer = nil;
+    if (pgr.state == UIGestureRecognizerStateBegan) {
+       timer =  [NSTimer scheduledTimerWithTimeInterval:0.1
+                                         target:self
+                                       selector:@selector(fireShuttleChange:)
+                                       userInfo:nil
+                                        repeats:YES];
+    } else if (pgr.state == UIGestureRecognizerStateCancelled) {
+        [timer invalidate];
+        [self centerSlider:YES];
+    } else if (pgr.state == UIGestureRecognizerStateEnded) {
+        [timer invalidate];
+        [self centerSlider:YES];
+    } else if (pgr.state == UIGestureRecognizerStateChanged) {
+        [self setNeedsDisplay];
+        
+        
+        CGPoint center = pgr.view.center;
+        CGPoint translation = [pgr translationInView:pgr.view];
+        
+        self.percent = self.bounds.size.width/2 - center.x;
+        self.percent = - _percent / (self.bounds.size.width/2.0);
+        NSLog(@"per %3.10f", _percent);
+        
+        float decelleration = 1 - (_percent * _percent);
+        NSLog(@"dec %3.10f", decelleration);
+        translation.x = decelleration * translation.x;
+        
+        float x = center.x + translation.x;
+        
+        if (x < 0) x = 0;
+        if (x > self.bounds.size.width) x = self.bounds.size.width;
+        
+        NSLog(@"%3.0f / %3.0f", translation.x, center.x + translation.x);
+        
+        
+        center = CGPointMake(x,
+                             center.y );
+        pgr.view.center = center;
+        [pgr setTranslation:CGPointZero inView:pgr.view];
+        
+        
+        
+//        _value = (_maxValue - _minValue)/2   * (1 + [self getPercent]);
+//        
+//        
+//        
+//        [self IBJogShuttledidChangePercentage:self];
+        
+        
+
+        
+        
+        
+    }
+}
+
+-(void) fireShuttleChange: (NSTimer*) timer {
+//    if (self.de) {
+//        <#statements#>
+//    }
+//    NSLog(@"Timer X: %2.0f", self.slider.center.x);
+}
+
 -(void) setGrooveCount:(NSInteger)grooveCount {
-    _grooveCount = grooveCount;
-    // to be done: refresh groove display  (13-09-13 13:07)
+    _grooveCount = grooveCount;  // to be done: refresh groove display  (13-09-13 13:07)
 }
 
 -(void) centerSlider: (BOOL) animated {
     
-    int scrollViewWidth = self.frame.size.width;
-    int contentViewWidth = self.contentSize.width;
-    int offset = (contentViewWidth-scrollViewWidth)/2;
-    if (animated) {
-        [UIView beginAnimations:@"slideToCenter" context:nil];
-        [UIView setAnimationDuration:0.2];
+//    if (animated) {
+//        [UIView beginAnimations:@"slideToCenter" context:nil];
+//        [UIView setAnimationDuration:0.2];
+//    }
+//    self.slider.center = self.center;
+//    if (animated) {
+//        [UIView commitAnimations];
+//    }
+
+    if(animated) {
+        [UIView animateWithDuration:0.2
+                              delay:0
+                            options:   UIViewAnimationOptionCurveLinear
+                         animations:^{
+                             //here you may add any othe actions,
+                             self.slider.center = self.center;
+                         }
+                         completion:^(BOOL finished){
+                             
+                             //here any actions, thet must be done AFTER 1st animation is finished. If you whant to loop animations, call your function here.
+                         }];
+    } else {
+        self.slider.center = self.center;
+        
     }
-    self.contentOffset = CGPointMake(offset, 0);
-    if (animated) {
-        [UIView commitAnimations];
-    }
+
     
 }
 
@@ -97,21 +165,12 @@
 #pragma mark - The ScrollView Protocol - UIScrollViewDelegate
 
 
-//scrollViewDidEndDragging:willDecelerate:
-//Tells the delegate when dragging ended in the scroll view.
-- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
-
-  //  NSLog(@"%@ - %@", NSStringFromCGSize(self.contentSize), NSStringFromCGPoint(self.contentOffset));
-
-    
-    
-    
-    
-    [self centerSlider:YES];
-}
 
 //scrollViewDidScroll:
 //Tells the delegate when the user scrolls the content view within the receiver.
+
+/*
+ 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     int scrollViewWidth = self.frame.size.width;
     int contentViewWidth = self.contentSize.width;
@@ -137,15 +196,19 @@
     
 
 }
+ 
+ */
 
+/*
 -(float) getPercent {
     
     float percent = ((self.contentSize.width/2 - self.contentOffset.x) - self.contentSize.width/4) / (self.contentSize.width/4);
    // NSLog(@"%f", percent);
     return percent;
 }
+*/
 
-
+/*
 - (void)IBJogShuttledidChangePercentage:(IBJogShuttle *)jogShuttle {
     _percent = [self getPercent];
     if (_jogShuttleDelegate) {
@@ -153,7 +216,7 @@
     } else
         NSLog(@"%f   -   %f", [self getPercent], _value);
 }
-
+*/
 
 
 - (void)drawRect:(CGRect)rect
@@ -277,148 +340,226 @@
     CGContextRef context = UIGraphicsGetCurrentContext();
     
     //// Color Declarations
-    UIColor* arrowGradientLight = [UIColor colorWithRed: 1 green: 1 blue: 1 alpha: 0.175];
-    UIColor* arrowGradientBright = [UIColor colorWithRed: 1 green: 1 blue: 1 alpha: 1];
+    UIColor* darkColor = [UIColor colorWithRed: 0.333 green: 0.333 blue: 0.333 alpha: 1];
+    UIColor* lightColor = [UIColor colorWithRed: 0.5 green: 0.5 blue: 0.5 alpha: 0.146];
     
     //// Gradient Declarations
-    NSArray* arrowGradientLeftColors = [NSArray arrayWithObjects:
-                                        (id)arrowGradientBright.CGColor,
-                                        (id)[UIColor colorWithRed: 1 green: 1 blue: 1 alpha: 0.588].CGColor,
-                                        (id)arrowGradientLight.CGColor, nil];
-    CGFloat arrowGradientLeftLocations[] = {0, 0.37, 1};
-    CGGradientRef arrowGradientLeft = CGGradientCreateWithColors(colorSpace, (__bridge CFArrayRef)arrowGradientLeftColors, arrowGradientLeftLocations);
-    NSArray* arrowGradientRightColors = [NSArray arrayWithObjects:
-                                         (id)arrowGradientLight.CGColor,
-                                         (id)arrowGradientBright.CGColor, nil];
-    CGFloat arrowGradientRightLocations[] = {0, 1};
-    CGGradientRef arrowGradientRight = CGGradientCreateWithColors(colorSpace, (__bridge CFArrayRef)arrowGradientRightColors, arrowGradientRightLocations);
+    NSArray* gradientColors = [NSArray arrayWithObjects:
+                               (id)darkColor.CGColor,
+                               (id)lightColor.CGColor, nil];
+    CGFloat gradientLocations[] = {0, 1};
+    CGGradientRef gradient = CGGradientCreateWithColors(colorSpace, (__bridge CFArrayRef)gradientColors, gradientLocations);
     
     //// Frames
-    CGRect frame = rect; // CGRectMake(0, 0, 80, 14);
-    frame.size.width = 6 * frame.size.height;
+//    CGRect rect = CGRectMake(0, 0, 125.5, 14);
     
-    //// leftArrows Drawing
-    UIBezierPath* leftArrowsPath = [UIBezierPath bezierPath];
-    [leftArrowsPath moveToPoint: CGPointMake(CGRectGetMinX(frame) + 0.11890 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.07449 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.01129 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.07449 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.11890 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.05570 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.11890 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [leftArrowsPath closePath];
-    [leftArrowsPath moveToPoint: CGPointMake(CGRectGetMinX(frame) + 0.23974 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.19532 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.13212 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.19532 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.23974 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.17654 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.23974 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [leftArrowsPath closePath];
-    [leftArrowsPath moveToPoint: CGPointMake(CGRectGetMinX(frame) + 0.36058 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.31616 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.25296 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.31616 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.36058 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.29738 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [leftArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.36058 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [leftArrowsPath closePath];
+    
+    //// leftArrow Drawing
+    UIBezierPath* leftArrowPath = [UIBezierPath bezierPath];
+    [leftArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.36938 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.39578 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.41434 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.38793 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.41434 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.39578 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.36938 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath closePath];
+    [leftArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.31888 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.34529 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.36385 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.33744 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.36385 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.34529 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.31888 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath closePath];
+    [leftArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.26839 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.29480 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.31336 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.28695 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.31336 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.29480 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.26839 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath closePath];
+    [leftArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.21790 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.24431 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.26287 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.23646 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.26287 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.24431 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.21790 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath closePath];
+    [leftArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.16741 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.19382 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.21238 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.18597 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.21238 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.19382 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.16741 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath closePath];
+    [leftArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.11692 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.14333 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.16189 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.13548 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.16189 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.14333 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.11692 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath closePath];
+    [leftArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.06643 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.09284 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.11139 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.08499 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.11139 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.09284 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.06643 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath closePath];
+    [leftArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.01594 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.04234 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.06090 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.03449 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.06090 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.04234 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [leftArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.01594 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [leftArrowPath closePath];
     CGContextSaveGState(context);
-    [leftArrowsPath addClip];
-    CGRect leftArrowsBounds = CGPathGetPathBoundingBox(leftArrowsPath.CGPath);
-    CGContextDrawLinearGradient(context, arrowGradientLeft,
-                                CGPointMake(CGRectGetMinX(leftArrowsBounds), CGRectGetMidY(leftArrowsBounds)),
-                                CGPointMake(CGRectGetMaxX(leftArrowsBounds), CGRectGetMidY(leftArrowsBounds)),
+    [leftArrowPath addClip];
+    CGRect leftArrowBounds = CGPathGetPathBoundingBox(leftArrowPath.CGPath);
+    CGContextDrawLinearGradient(context, gradient,
+                                CGPointMake(CGRectGetMaxX(leftArrowBounds), CGRectGetMidY(leftArrowBounds)),
+                                CGPointMake(CGRectGetMinX(leftArrowBounds), CGRectGetMidY(leftArrowBounds)),
                                 0);
     CGContextRestoreGState(context);
     
     
-    //// rightArrows Drawing
-    UIBezierPath* rightArrowsPath = [UIBezierPath bezierPath];
-    [rightArrowsPath moveToPoint: CGPointMake(CGRectGetMinX(frame) + 0.74704 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.68384 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.63942 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.70262 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.63942 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.68384 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.74704 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [rightArrowsPath closePath];
-    [rightArrowsPath moveToPoint: CGPointMake(CGRectGetMinX(frame) + 0.86788 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.80468 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.76026 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.82346 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.76026 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.80468 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.86788 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [rightArrowsPath closePath];
-    [rightArrowsPath moveToPoint: CGPointMake(CGRectGetMinX(frame) + 0.98871 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.92551 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.88110 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.96429 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.94430 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.88110 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.92551 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.02264 * CGRectGetHeight(frame))];
-    [rightArrowsPath addLineToPoint: CGPointMake(CGRectGetMinX(frame) + 0.98871 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.49313 * CGRectGetHeight(frame))];
-    [rightArrowsPath closePath];
+    //// rightArrow Drawing
+    UIBezierPath* rightArrowPath = [UIBezierPath bezierPath];
+    [rightArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.63461 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.60820 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.58964 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.61605 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.58964 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.60820 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.63461 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath closePath];
+    [rightArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.68510 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.65869 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.64013 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.66654 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.64013 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.65869 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.68510 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath closePath];
+    [rightArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.73559 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.70918 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.69062 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.71703 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.69062 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.70918 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.73559 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath closePath];
+    [rightArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.78608 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.75967 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.74112 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.76752 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.74112 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.75967 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.78608 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath closePath];
+    [rightArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.83657 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.81017 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.79161 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.81802 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.79161 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.81017 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.83657 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath closePath];
+    [rightArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.88707 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.86066 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.84210 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.86851 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.84210 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.86066 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.88707 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath closePath];
+    [rightArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.93756 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.91115 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.89259 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.91900 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.89259 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.91115 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.93756 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath closePath];
+    [rightArrowPath moveToPoint: CGPointMake(CGRectGetMinX(rect) + 0.98805 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.96164 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.94308 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.78571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.96949 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.94308 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.96164 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.28571 * CGRectGetHeight(rect))];
+    [rightArrowPath addLineToPoint: CGPointMake(CGRectGetMinX(rect) + 0.98805 * CGRectGetWidth(rect), CGRectGetMinY(rect) + 0.53554 * CGRectGetHeight(rect))];
+    [rightArrowPath closePath];
     CGContextSaveGState(context);
-    [rightArrowsPath addClip];
-    CGRect rightArrowsBounds = CGPathGetPathBoundingBox(rightArrowsPath.CGPath);
-    CGContextDrawLinearGradient(context, arrowGradientRight,
-                                CGPointMake(CGRectGetMinX(rightArrowsBounds), CGRectGetMidY(rightArrowsBounds)),
-                                CGPointMake(CGRectGetMaxX(rightArrowsBounds), CGRectGetMidY(rightArrowsBounds)),
+    [rightArrowPath addClip];
+    CGRect rightArrowBounds = CGPathGetPathBoundingBox(rightArrowPath.CGPath);
+    CGContextDrawLinearGradient(context, gradient,
+                                CGPointMake(CGRectGetMinX(rightArrowBounds), CGRectGetMidY(rightArrowBounds)),
+                                CGPointMake(CGRectGetMaxX(rightArrowBounds), CGRectGetMidY(rightArrowBounds)),
                                 0);
     CGContextRestoreGState(context);
     
     
     //// Cleanup
-    CGGradientRelease(arrowGradientLeft);
-    CGGradientRelease(arrowGradientRight);
+    CGGradientRelease(gradient);
     CGColorSpaceRelease(colorSpace);
+    
     
 
 }
 
 - (void)drawRectButtonInRect:(CGRect)rect {
+
     //// General Declarations
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
     CGContextRef context = UIGraphicsGetCurrentContext();
     
     //// Color Declarations
-    UIColor* flareWhite = [UIColor colorWithRed: 1 green: 1 blue: 1 alpha: 0.781];
-    UIColor* leftRectButtonGradientColor = [UIColor colorWithRed: 1 green: 1 blue: 1 alpha: 0];
-    UIColor* rightRectButtonGradientColor = [UIColor colorWithRed: 0 green: 0 blue: 0 alpha: 0];
-    UIColor* color = [UIColor colorWithRed: 0.5 green: 0.5 blue: 0.5 alpha: 1];
+    UIColor* color = [UIColor colorWithRed: 0.443 green: 0.439 blue: 0.443 alpha: 1];
+    UIColor* buttonGradientColor = [UIColor colorWithRed: 0.843 green: 0.843 blue: 0.843 alpha: 1];
+    UIColor* buttonGradientColor2 = [UIColor colorWithRed: 0.871 green: 0.867 blue: 0.867 alpha: 1];
+    UIColor* buttonGradientColor3 = [UIColor colorWithRed: 0.781 green: 0.781 blue: 0.781 alpha: 1];
+    UIColor* buttonGradientColor4 = [UIColor colorWithRed: 0.408 green: 0.408 blue: 0.408 alpha: 1];
     
     //// Gradient Declarations
-    NSArray* rectButtonGradientColors = [NSArray arrayWithObjects:
-                                         (id)rightRectButtonGradientColor.CGColor,
-                                         (id)[UIColor colorWithRed: 0.5 green: 0.5 blue: 0.5 alpha: 0.391].CGColor,
-                                         (id)flareWhite.CGColor,
-                                         (id)[UIColor colorWithRed: 1 green: 1 blue: 1 alpha: 0.781].CGColor,
-                                         (id)flareWhite.CGColor,
-                                         (id)[UIColor colorWithRed: 1 green: 1 blue: 1 alpha: 0.391].CGColor,
-                                         (id)leftRectButtonGradientColor.CGColor, nil];
-    CGFloat rectButtonGradientLocations[] = {0, 0.05, 0.22, 0.41, 0.6, 0.84, 1};
-    CGGradientRef rectButtonGradient = CGGradientCreateWithColors(colorSpace, (__bridge CFArrayRef)rectButtonGradientColors, rectButtonGradientLocations);
+    NSArray* buttonGradientColors = [NSArray arrayWithObjects:
+                                     (id)color.CGColor,
+                                     (id)[UIColor colorWithRed: 0.643 green: 0.641 blue: 0.643 alpha: 1].CGColor,
+                                     (id)buttonGradientColor.CGColor,
+                                     (id)[UIColor colorWithRed: 0.812 green: 0.812 blue: 0.812 alpha: 1].CGColor,
+                                     (id)buttonGradientColor3.CGColor,
+                                     (id)[UIColor colorWithRed: 0.826 green: 0.824 blue: 0.824 alpha: 1].CGColor,
+                                     (id)buttonGradientColor2.CGColor,
+                                     (id)[UIColor colorWithRed: 0.639 green: 0.637 blue: 0.637 alpha: 1].CGColor,
+                                     (id)buttonGradientColor4.CGColor, nil];
+    CGFloat buttonGradientLocations[] = {0, 0.05, 0.2, 0.24, 0.33, 0.35, 0.37, 0.52, 1};
+    CGGradientRef buttonGradient = CGGradientCreateWithColors(colorSpace, (__bridge CFArrayRef)buttonGradientColors, buttonGradientLocations);
     
     //// Shadow Declarations
-    UIColor* buttonOuterShadow = color;
-    CGSize buttonOuterShadowOffset = CGSizeMake(1.1, 1.1);
-    CGFloat buttonOuterShadowBlurRadius = 12.5;
+    UIColor* shadow2 = [UIColor blackColor];
+    CGSize shadow2Offset = CGSizeMake(0.1, -0.1);
+    CGFloat shadow2BlurRadius = 5;
     
     //// Frames
-    CGRect frame = rect; // CGRectMake(0, 0, 20, 56);
+//    CGRect rect = CGRectMake(0, 0, 30.5, 69.5);
     
     
-    //// buttonRectangle Drawing
-    CGRect buttonRectangleRect = CGRectMake(CGRectGetMinX(frame) + floor(CGRectGetWidth(frame) * 0.00000 + 0.5), CGRectGetMinY(frame) + floor(CGRectGetHeight(frame) * 0.00000 + 0.5), floor(CGRectGetWidth(frame) * 1.00000 + 0.5) - floor(CGRectGetWidth(frame) * 0.00000 + 0.5), floor(CGRectGetHeight(frame) * 1.00000 + 0.5) - floor(CGRectGetHeight(frame) * 0.00000 + 0.5));
-    UIBezierPath* buttonRectanglePath = [UIBezierPath bezierPathWithRect: buttonRectangleRect];
+    //// Rectangle Drawing
+    CGRect rectangleRect = CGRectMake(CGRectGetMinX(rect) + 2, CGRectGetMinY(rect) + 1, CGRectGetWidth(rect) - 3.5, CGRectGetHeight(rect) - 2.5);
+    UIBezierPath* rectanglePath = [UIBezierPath bezierPathWithRect: rectangleRect];
     CGContextSaveGState(context);
-    CGContextSetShadowWithColor(context, buttonOuterShadowOffset, buttonOuterShadowBlurRadius, buttonOuterShadow.CGColor);
+    CGContextSetShadowWithColor(context, shadow2Offset, shadow2BlurRadius, shadow2.CGColor);
     CGContextBeginTransparencyLayer(context, NULL);
-    [buttonRectanglePath addClip];
-    CGContextDrawLinearGradient(context, rectButtonGradient,
-                                CGPointMake(CGRectGetMinX(buttonRectangleRect), CGRectGetMidY(buttonRectangleRect)),
-                                CGPointMake(CGRectGetMaxX(buttonRectangleRect), CGRectGetMidY(buttonRectangleRect)),
+    [rectanglePath addClip];
+    CGContextDrawLinearGradient(context, buttonGradient,
+                                CGPointMake(CGRectGetMaxX(rectangleRect), CGRectGetMidY(rectangleRect)),
+                                CGPointMake(CGRectGetMinX(rectangleRect), CGRectGetMidY(rectangleRect)),
                                 0);
     CGContextEndTransparencyLayer(context);
     CGContextRestoreGState(context);
@@ -426,11 +567,12 @@
     
     
     //// Cleanup
-    CGGradientRelease(rectButtonGradient);
+    CGGradientRelease(buttonGradient);
     CGColorSpaceRelease(colorSpace);
     
 
     
+
 }
 
 
@@ -659,32 +801,38 @@
     NSLog(@"Grooves: %d", _jogShuttle.grooveCount);
     
     
-    NSInteger dx = frame.size.width / _jogShuttle.grooveCount;
+    NSInteger dx = frame.size.width / (_jogShuttle.grooveCount - 1);
     
-    for (int i=0; i<=_jogShuttle.grooveCount; i++) {
-        int grooveWidth = 1;
-        
-        
-            CGRect rectangleRect = CGRectMake(i * dx + dx/2, 1, grooveWidth, floor(CGRectGetHeight(group)  ) );
+    if (_jogShuttle.jogShuttleButtonType != IBJogButtonArrows) {
+        float maxGrooveWidth = 4;
+        for (float i=0; i<=_jogShuttle.grooveCount; i++) {
+            if ((i != (int) (_jogShuttle.grooveCount/2)) || (_jogShuttle.jogShuttleButtonType==IBJogButtonNone) ) {
+                float prozent = 0.5 - i / _jogShuttle.grooveCount;
+                float grooveWidth = maxGrooveWidth - maxGrooveWidth * (prozent * prozent) * 4 + 1;
+                NSLog(@"Pro %f - groovew %f", prozent, grooveWidth);
+                
+                CGRect rectangleRect = CGRectMake(i * dx - grooveWidth/2 , 1, grooveWidth, floor(CGRectGetHeight(group)  ) );
+                
+                CGContextSaveGState(context);
+                
+                CGContextDrawLinearGradient(context, wheelGradient,
+                                            CGPointMake(CGRectGetMinX(rectangleRect), CGRectGetMidY(rectangleRect)),
+                                            CGPointMake(CGRectGetMaxX(rectangleRect), CGRectGetMidY(rectangleRect)),
+                                            0);
+                CGContextRestoreGState(context);
+            }
             
-            CGContextSaveGState(context);
-            
-            CGContextDrawLinearGradient(context, wheelGradient,
-                                        CGPointMake(CGRectGetMinX(rectangleRect), CGRectGetMidY(rectangleRect)),
-                                        CGPointMake(CGRectGetMaxX(rectangleRect), CGRectGetMidY(rectangleRect)),
-                                        0);
-            CGContextRestoreGState(context);
-
+        }
     }
     
     int i = floor(_jogShuttle.grooveCount / 2);
     
     switch (_jogShuttle.jogShuttleButtonType) {
         case IBJogButtonArrows:
-            [self drawArrowsInRect:CGRectMake(i * dx, frame.size.height/4, 2 * dx, frame.size.height /2 )];
+            [self drawArrowsInRect:CGRectMake(frame.size.width/4, 0, frame.size.width/2, frame.size.height )];
             break;
         case IBJogButtonRectButton:
-            [self drawRectButtonInRect:CGRectMake(i * dx +10  , 0, 20, frame.size.height )];
+            [self drawRectButtonInRect:CGRectMake(i * dx - dx/4   , 0, dx/2, frame.size.height )];
             break;
         case IBJogButtonRoundButton:
             [self drawRoundButtonInRect:CGRectMake(i * dx +1 , 1.5, floor(CGRectGetHeight(group))-1, floor(CGRectGetHeight(group)  )-1 )];
@@ -697,19 +845,19 @@
     //// Cleanup
     CGGradientRelease(kerbenGradient);
     CGColorSpaceRelease(colorSpace);
-    
+
+    /*
     CGContextSetCMYKStrokeColor(context, 255, 0, 0, 0, 1);
     
     int centerx = rect.size.width/2;
     int centery = rect.size.height/2;
-    CGContextMoveToPoint(context, centerx-1, centery-1);
+    CGContextMoveToPoint(context, centerx, centery-10);
+    CGContextAddLineToPoint(context, centerx, centery+10);
     
-    CGContextAddLineToPoint(context, centerx+1, centery+1);
-    CGContextMoveToPoint(context, centerx+1, centery-1);
-    CGContextAddLineToPoint(context, centerx-1  , centery+1);
+    CGContextMoveToPoint(context, centerx-10, centery);
+    CGContextAddLineToPoint(context, centerx+10  , centery);
     CGContextDrawPath(context  , kCGPathStroke);
-    
-    
+    */
     
 }
 @end

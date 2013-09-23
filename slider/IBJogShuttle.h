@@ -27,7 +27,9 @@ enum IBJogShuttleButtonType {
     };
 
 
-@interface IBJogShuttle : UIScrollView <UIScrollViewDelegate>
+@interface IBJogShuttle : UIView {
+    UIView *sliderView;
+}
 
 
 

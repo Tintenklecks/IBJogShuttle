@@ -22,7 +22,9 @@
 //    IBJogShuttle *jog = [[IBJogShuttle alloc] initWithFrame:CGRectMake(20, top, self.view.bounds.size.width - 40, width)];
     IBJogShuttle *jog = [[IBJogShuttle alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 40)];
     jog.grooveCount = 20;
+    jog.jogShuttleButtonType = IBJogButtonArrows;
     jog.jogShuttleDelegate = self;
+    jog.autoresizingMask = UIViewAutoresizingFlexibleWidth;
 //    jog.autoresizingMask = UIViewAutoresizingFlexibleWidth;
 	[self.view addSubview:jog];
 
